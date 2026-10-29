@@ -1,0 +1,497 @@
+# Names: Emil Abdumalikov ID: 
+#               Ilan Travin             ID: 
+
+print(
+    '---------------------------------------------------task 1------------------------------------------------------------------')
+
+
+def make_rectangle(x, y, length, width):
+    """
+    Constructs a rectangle given its top-left corner coordinates (x, y),
+    """
+
+    def dispatch(method):   # dispatch is used instead of dispatch to avoid shadowing the built-in dispatch function
+        if method == 'x':
+            return x
+        elif method == 'y':
+            return y
+        elif method == 'length':
+            return length
+        elif method == 'width':
+            return width
+        elif method == 'diagonal':
+            return (length ** 2 + width ** 2) ** 0.5
+        elif method == 'center':
+            return (x + length / 2, y + width / 2)
+        elif method == 'print':
+            return f"Rectangle: point = ({x}, {y}); size = {length}x{width}"
+        elif method == 'move':
+            return lambda dx, dy: make_rectangle(x + dx, y + dy, length, width)
+        elif method == 'resize':
+            return lambda factor: make_rectangle(x, y, length * factor, width * factor)
+        elif method == 'average':
+            return lambda rect: make_rectangle(
+                (x + rect('x')) / 2,
+                (y + rect('y')) / 2,
+                (length + rect('length')) / 2,
+                (width + rect('width')) / 2
+            )
+        # More methods can be added here as needed.
+
+    return dispatch
+
+
+# Now the functions such as print_rectangle, move, resize, etc., can directly use the dispatch mechanism.
+def print_rectangle(rectangle): # Print the rectangle
+    print(rectangle('print'))
+
+
+def move(rectangle, deltaX, deltaY): # Move the rectangle by a given delta
+    return rectangle('move')(deltaX, deltaY)
+
+
+def resize(rectangle, factor): # Resize the rectangle by a given factor
+    return rectangle('resize')(factor)
+
+
+def average_rectangle(rectangle1, rectangle2): # Calculate the average rectangle between two rectangles
+    return rectangle1('average')(rectangle2)
+
+
+def distance(rectangle1, rectangle2): # Calculate the distance between the centers of two rectangles
+    center1 = rectangle1('center')
+    center2 = rectangle2('center')
+    return ((center1[0] - center2[0]) ** 2 + (center1[1] - center2[1]) ** 2) ** 0.5
+
+
+# Example of using updated dispatch
+r1 = make_rectangle(3, 4, 10, 26)
+print(r1)
+print(r1('x'))
+print(r1('y'))
+print(r1('length'))
+print(r1('width'))
+print(r1('diagonal'))
+print_rectangle(r1)
+print(r1('center'))
+print(distance(r1, make_rectangle(6, 9, 5, 8)))
+print_rectangle(move(r1, 2, -3))
+print_rectangle(resize(r1, 0.5))
+print_rectangle(move(resize(r1, 1.5), -8, 2))
+r2 = make_rectangle(6, 9, 5, 8)
+print_rectangle(average_rectangle(r1, r2))
+print_rectangle(average_rectangle(move(r1, -1, -2), resize(average_rectangle(r2,
+                                                                             make_rectangle(6, 9, 5, 8)), 2)))
+print(average_rectangle(move(r1, -1, -2), resize(average_rectangle(r2, make_rectangle(6, 9, 5, 8)),
+                                                 2)))
+
+print(
+    '---------------------------------------------------task 2------------------------------------------------------------------')
+
+
+def make_matrix(n, m, matrix_data):
+    """
+    Constructs a matrix given its dimensions n (rows) and m (columns),
+    and matrix_data as a single list.
+    """
+    assert len(matrix_data) == n * m, "Invalid matrix dimensions."
+
+    def get_item(row, col): # Get an item from the matrix
+        assert 0 <= row < n and 0 <= col < m, "Row or column is out of bounds."
+        return matrix_data[row * m + col]
+
+    def print_matrix(): # Print the matrix
+        for i in range(n):
+            print(' '.join('{:4}'.format(item) for item in matrix_data[i * m:(i + 1) * m]))
+
+    def dispatch(method, *args): # dispatch is used instead of dispatch to avoid shadowing the built-in dispatch function
+        if method == 'get_item':
+            return get_item(*args)
+        elif method == 'print_matrix':
+            return print_matrix()
+        elif method == 'n':
+            return n
+        elif method == 'm':
+            return m
+        elif method == 'matrix':
+            return matrix_data
+        else:
+            raise ValueError(f"Unknown method: {method}")
+
+    return dispatch
+
+
+def PrintMatrix(matrix): # Print the matrix
+    matrix('print_matrix')
+
+
+def AddMatrix(matrix1, matrix2): # Add two matrices
+    assert matrix1('n') == matrix2('n') and matrix1('m') == matrix2('m'), "Matrices must have the same dimensions."
+    matrix1_data = matrix1('matrix')
+    matrix2_data = matrix2('matrix')
+    result = [a + b for a, b in zip(matrix1_data, matrix2_data)]
+    return make_matrix(matrix1('n'), matrix1('m'), result)
+
+
+def TransposeMatrix(matrix): # Transpose a matrix
+    n, m = matrix('n'), matrix('m')
+    matrix_data = matrix('matrix')
+    result = [matrix_data[j * m + i] for i in range(m) for j in range(n)]
+    return make_matrix(m, n, result)
+
+
+def MulMatrix(matrix1, matrix2):
+    n1, m1 = matrix1('n'), matrix1('m')  # Dimensions of the first matrix
+    n2, m2 = matrix2('n'), matrix2('m')  # Dimensions of the second matrix (after transposition if applied)
+    assert m1 == n2, "Number of columns in the first matrix must be equal to the number of rows in the second matrix."
+
+    # Initialize an empty list to store the result
+    result = []
+    for i in range(n1):  # Iterate over rows of the first matrix
+        for j in range(m2):  # Iterate over columns of the second matrix
+            total = 0
+            for k in range(m1):  # Use m1 or n2 here, they should be the same
+                # Update to access elements correctly using 'get_item' to avoid direct list access issues
+                total += matrix1('get_item', i, k) * matrix2('get_item', k, j)
+            result.append(total)
+
+    # Return a new matrix with the result of multiplication
+    return make_matrix(n1, m2, result)
+
+
+m1 = make_matrix(2, 3, [1, 2, 3, 4, 5, 6])
+print(m1)
+print(m1('n'))
+print(m1('m'))
+print(m1('matrix'))
+m2 = make_matrix(2, 3, [3, 4, 5, 6, 7, 8])
+print('')
+PrintMatrix(m1)
+print('')
+PrintMatrix(m2)
+print('')
+PrintMatrix(AddMatrix(m1, m2))
+print('')
+PrintMatrix(MulMatrix(m1, TransposeMatrix(AddMatrix(m1, m2))))
+
+print(
+    '---------------------------------------------------task 3------------------------------------------------------------------')
+from functools import reduce
+
+
+def avg_grades(courses):
+    "Calculates the average grade for each course."
+    # Use map and reduce to calculate the average grade for each course
+    avg_grades_result = tuple(
+        map(lambda course: (course[0], reduce(lambda a, b: a + b, course[1]) / len(course[1])), courses))
+    return avg_grades_result
+
+
+# Your provided course data
+courses = (('a', [81, 78, 57]), ('b', [95, 98]), ('c', [75, 45]), ('d', [58]))
+
+# Calculating and printing the average grades
+average_grades = avg_grades(courses)
+print("Average grades per course:")
+print(average_grades)
+
+
+def custom_round(number):
+    # Split the number into its integer and fractional parts
+    integer_part = int(number)
+    fractional_part = number - integer_part
+
+    # Apply the custom rounding rules
+    if fractional_part < 0.5:
+        # If the fractional part is below 0.5, round down
+        rounded_number = integer_part
+    elif fractional_part > 0.5:
+        # If the fractional part is above 0.5, round up
+        rounded_number = integer_part + 1
+    else:
+        # If the fractional part is exactly 0.5, keep it as 0.5
+        rounded_number = integer_part + 0.5
+
+    # Ensure the number is formatted to have one decimal place
+    return float(f"{rounded_number:.1f}")
+
+
+def add_factors(courses, factors):
+    factors_dict = dict(factors)
+
+    def adjust_grade(course):
+        course_name, grades = course
+        factor = factors_dict.get(course_name, 0)  # Default to 0 if no factor is specified for the course
+        # Adjust grades with the factor, ensuring they do not exceed 100, and apply custom rounding
+        adjusted_grades = list(map(lambda grade: custom_round(min(grade + factor, 100)), grades))
+        # Filter out grades that are more than 100 after adjustment
+        valid_grades = list(filter(lambda grade: grade <= 100, adjusted_grades))
+        # Calculate the new average, ensuring to apply custom rounding to the result as well
+        new_avg = custom_round(sum(valid_grades) / len(valid_grades)) if valid_grades else 0
+        return course_name, new_avg
+
+    # Apply grade adjustment to each course and calculate new averages using map
+    adjusted_averages = tuple(map(adjust_grade, courses))
+    return adjusted_averages
+
+
+# Provided course data and factors
+courses = (('a', [81, 78, 57]), ('b', [95, 98]), ('c', [75, 45]), ('d', [58]))
+factors = (('c', 15), ('a', 20))
+
+# Calculating and printing the adjusted average grades
+adjusted_average_grades = add_factors(courses, factors)
+print("Adjusted average grades per course:")
+print(adjusted_average_grades)
+
+
+def total_average(avg_grades, credits):
+    credits_dict = dict(credits)
+    # Use reduce to calculate the weighted sum of grades and total credits
+    weighted_sum, total_credits = reduce(lambda acc, grade_info: (
+        acc[0] + grade_info[1] * credits_dict.get(grade_info[0], 0), acc[1] + credits_dict.get(grade_info[0], 0)),
+                                         avg_grades, (0, 0))
+    weighted_average = weighted_sum / total_credits if total_credits else 0
+    return weighted_average
+
+
+# Example usage
+courses = (('a', [81, 78, 57]), ('b', [95, 98]), ('c', [75, 45]), ('d', [58]))
+credits = (('b', 2.5), ('d', 4), ('c', 3.5), ('a', 5))
+average_grades = avg_grades(courses)
+# Calculating the total weighted average grade
+print(f"Weighted average grade:", total_average(avg_grades(courses), credits))
+
+print(
+    '---------------------------------------------------task 4------------------------------------------------------------------')
+
+
+def sets(initial_elements=None):
+    "Constructs a set with the given initial elements."
+    if initial_elements is None:
+        initial_elements = []
+    set_elements = [False] * 21  # For integers 0-20
+    for element in initial_elements:
+        if 0 < element <= 20:
+            set_elements[element] = True
+
+    def dispatch(message, *args): # dispatch is used instead of dispatch to avoid shadowing the built-in dispatch function
+        if message == 'add':
+            element = args[0]
+            if 0 < element <= 20:
+                set_elements[element] = True
+        elif message == 'remove':
+            element = args[0]
+            if 0 < element <= 20:
+                set_elements[element] = False
+        elif message == 'set':
+            new_elements = args[0]
+            for i in range(21):
+                set_elements[i] = i in new_elements
+        elif message == 'xor':
+            other_set = args[0]
+            return sets([i for i in range(21) if set_elements[i] != other_set('in', i)])
+        elif message == '\\':
+            other_set = args[0]
+            return sets([i for i in range(21) if set_elements[i] and other_set('in', i)])
+        elif message == '*':
+            other_set = args[0]
+            return sets([i for i in range(21) if set_elements[i] and not other_set('in', i)])
+        elif message == '+':
+            other_set = args[0]
+            return sets([i for i in range(21) if set_elements[i] or other_set('in', i)])
+        elif message == 'in':
+            element = args[0]
+            return 0 <= element <= 20 and set_elements[element]
+        elif message == 'not in':
+            element = args[0]
+            return not (0 <= element <= 20 and set_elements[element])
+        elif message == 'not':
+            return sets([i for i, present in enumerate(set_elements) if not present])
+        elif message == 'view':
+            return {i for i, present in enumerate(set_elements) if present}
+        # Add more operations here as needed, like union, intersection, difference
+
+        else:
+            raise ValueError("Unknown operation")
+
+    return dispatch
+
+
+# Example usage
+s1 = sets((1, 2, 3, 4, 5, 100))
+print(s1)
+print(s1('view'))
+print(s1('in', 3))
+print(s1('not in', 31))
+print(s1('not in', 3))
+s2 = s1('not')
+print(s2)
+print(s2('view'))
+s1('set', (1, 2, 3, 4, 5, 7, 9, 12, 17))
+s2('set', (2, 4, 5, 10, 14, 16, 20))
+print(s1('+', s2)('not')('view'))
+print(s1('*', s2)('xor', s1('\\'
+                            , sets((2, 3, 5, 12))))('view'))
+
+print(
+    '---------------------------------------------------task 5------------------------------------------------------------------')
+
+
+def make_warehouse(courses_dict, credits_dict, types):
+    " Constructs a warehouse for courses, credits, and types."
+    warehouse_courses = {}
+
+    # Function to calculate the average grade for a given course type
+    def avg_course_type(type_name):
+        # Get the courses for the given type
+        type_courses = types.get(type_name, [])
+        # Get the grades for the courses
+        type_grades = [courses_dict[course] for course in type_courses if course in courses_dict]
+        # Return the average grade if there are any grades, else return None
+        return sum(type_grades) / len(type_grades) if type_grades else None
+
+    # Function to find the maximum grade for a given course type
+    def max_course_type(type_name):
+        # Get the courses for the given type
+        type_grades = [courses_dict[course] for course in types.get(type_name, []) if course in courses_dict]
+        # Return the maximum grade if there are any grades, else return None
+        return max(type_grades) if type_grades else None
+
+    # Function to find the minimum grade for a given course type
+    def min_course_type(type_name):
+        # Get the courses for the given type
+        type_grades = [courses_dict[course] for course in types.get(type_name, []) if course in courses_dict]
+        # Return the minimum grade if there are any grades, else return None
+        return min(type_grades) if type_grades else None
+
+    # Function to find the course with the minimum credits
+    def min_credits():
+        # Return the course with the minimum credits
+        return courses_dict.get(min(credits_dict, key=credits_dict.get))
+
+    # Function to find the course with the maximum credits
+    def max_credits():
+        # Return the course with the maximum credits
+        return courses_dict.get(max(credits_dict, key=credits_dict.get))
+
+    # Function to add a course to a given course type
+    def add_course(name, grade, course_type):
+        # If the course type exists, add the course to it
+        # Else, print an error message
+        types[course_type] = types[course_type] + (name,) \
+            if course_type in types else print(
+            "Course type does not exist.")
+        # If the course type exists, add the grade to the course
+        if course_type in types:
+            courses_dict[name] = grade
+
+    # Function to calculate the total average grade
+    def average_total():
+        # Calculate the total grade by summing the product of each course's grade and its credits
+        total_grade = sum(
+            courses_dict[course] * credits_dict[course] for course in courses_dict if course in credits_dict)
+        # Calculate the total credits
+        total_credits = sum(credits_dict.values())
+        # Return the total grade divided by the total credits if there are any credits, else return None
+        return total_grade / total_credits if total_credits else None
+
+    # Add the functions to the dictionary
+    warehouse_courses = {
+        'min_course': min_course_type,
+        'max_course': max_course_type,
+        'avg_course': avg_course_type,
+        'min_credits': min_credits,
+        'max_credits': max_credits,
+        'add_course': add_course,
+        'average_total': average_total
+    }
+    # Return the dictionary
+    return warehouse_courses
+
+
+courses = (('a', 80), ('b', 95), ('c', 75), ('d', 58))
+credits = (('a', 2.5), ('b', 4), ('c', 3.5), ('d', 5))
+courses_dict = dict(courses)
+credits_dict = dict(credits)
+types = {'t1': ('a', 'b'), 't2': ('c',), 't3': ('d',)}
+w = make_warehouse(courses_dict, credits_dict, types)
+print(w['min_credits']())
+print(w['max_credits']())
+print(w['min_course']('t1'))
+print(w['max_course']('t1'))
+print(w['avg_course']('t1'))
+w['add_course']('e', 90, 't2')
+print(w['max_course']('t2'))
+print(w['min_course']('t2'))
+print(w['avg_course']('t2'))
+
+print(
+    '---------------------------------------------------task 6------------------------------------------------------------------')
+
+
+def make_sequence(seq):
+    " Constructs a sequence from the given list."
+
+    def _filter_(func=None): # _filter_ is used instead of filter to avoid shadowing the built-in filter function
+        return seq if func is None else tuple(filter(func, seq))
+
+    def filter_iterator(func): # filter_iterator is used instead of filter to avoid shadowing the built-in filter function
+        filtered_seq = _filter_(func)
+        reversed_filtered_seq = make_sequence(filtered_seq)('reverse')()
+
+        index, reverse_index = -1, -1
+
+        def _next_(): # _next_ is used instead of next to avoid shadowing the built-in next function
+            nonlocal index
+            index = (index + 1) % len(filtered_seq)
+            return filtered_seq[index]
+
+        def _reverse_(): # _reverse_ is used instead of reverse to avoid shadowing the built-in reverse function
+            nonlocal reverse_index
+            reverse_index = (reverse_index + 1) % len(reversed_filtered_seq)
+            return reversed_filtered_seq[reverse_index]
+
+        def dispatch(msg): # dispatch is used instead of dispatch to avoid shadowing the built-in dispatch function
+            return _next_() if msg == 'next' else _reverse_() if msg == 'reverse' else None
+
+        return dispatch
+
+    def reverse(): # reverse is used instead of reverse to avoid shadowing the built-in reverse function
+        return seq[::-1]
+
+    def extend(seq2): # extend is used instead of extend to avoid shadowing the built-in extend function
+        nonlocal seq
+        seq = seq + seq2
+
+    def dispatch(msg): # dispatch is used instead of dispatch to avoid shadowing the built-in dispatch function
+        if msg == 'filter':
+            return _filter_
+        if msg == 'filter_iterator':
+            return filter_iterator
+        if msg == 'reverse':
+            return reverse
+        if msg == 'extend':
+            return extend
+
+    return dispatch
+
+
+s1 = make_sequence((1, 2, 3, 4, 5))
+print(s1)
+p1 = s1('filter_iterator')(lambda x: x < 4)
+print(p1)
+
+for _ in range(5):
+    print(p1('next'))
+print('')
+print("Reversed:")
+for _ in range(4):
+    print(p1('reverse'))
+print('')
+s1('extend')(s1('filter')(lambda x: x % 2 != 0))
+print(s1('filter')(lambda x: x > 2))
+print('')
+print(s1('filter')())
+print('')
+print(make_sequence(s1('reverse')())('filter')(lambda x: x < 4))

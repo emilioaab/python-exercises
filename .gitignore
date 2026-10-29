@@ -1,0 +1,17 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+.idea/
+.vscode/
+.DS_Store
+node_modules/
+cmake-build-*/
+*.o
+*.out
+*.exe
+*.class
+bin/
+obj/
+*.db
+*.sqlite3
